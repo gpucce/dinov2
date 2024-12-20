@@ -2,5 +2,8 @@
 train:
   dataset_path: ImageNet:split=TRAIN
   batch_size_per_gpu: 64
+  output_dir: "dino_vit16_test"
 student:
   block_chunks: 4
+evaluation:
+  eval_period_iterations: 100

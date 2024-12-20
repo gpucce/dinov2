@@ -110,7 +110,7 @@ class SSLMetaArch(nn.Module):
             else:
                 logger.info("OPTIONS -- IBOT -- head shared with DINO")
 
-        self.need_to_synchronize_fsdp_streams = True
+        self.need_to_synchronize_fsdp_streams = False
 
         self.student = nn.ModuleDict(student_model_dict)
         self.teacher = nn.ModuleDict(teacher_model_dict)
