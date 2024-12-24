@@ -227,7 +227,7 @@ class SSLMetaArch(nn.Module):
             return teacher_dino_softmaxed_centered_list, masked_teacher_ibot_softmaxed_centered
 
         teacher_dino_softmaxed_centered_list, masked_teacher_ibot_softmaxed_centered = get_teacher_output()
-        reshard_fsdp_model(self.teacher)
+        # reshard_fsdp_model(self.teacher)
 
         loss_dict = {}
 
@@ -339,11 +339,11 @@ class SSLMetaArch(nn.Module):
             # accumulate loss
             loss_accumulator += self.ibot_loss_weight * ibot_patch_loss
 
-        self.backprop_loss(loss_accumulator)
+        # self.backprop_loss(loss_accumulator)
 
-        self.fsdp_synchronize_streams()
+        # self.fsdp_synchronize_streams()
 
-        return loss_dict
+        return loss_dict, student_global_backbone_output_dict
 
     def fsdp_synchronize_streams(self):
         if self.need_to_synchronize_fsdp_streams:
@@ -358,14 +358,17 @@ class SSLMetaArch(nn.Module):
         teacher_param_list = []
         with torch.no_grad():
             for k in self.student.keys():
-                for ms, mt in zip(get_fsdp_modules(self.student[k]), get_fsdp_modules(self.teacher[k])):
-                    student_param_list += ms.params
-                    teacher_param_list += mt.params
+                for ms, mt in zip(self.student[k].parameters(), self.teacher[k].parameters()):
+                    student_param_list += [ms]
+                    teacher_param_list += [mt]
+                # for ms, mt in zip(get_fsdp_modules(self.student[k]), get_fsdp_modules(self.teacher[k])):
+                #     student_param_list += ms.params
+                #     teacher_param_list += mt.params
             torch._foreach_mul_(teacher_param_list, m)
             torch._foreach_add_(teacher_param_list, student_param_list, alpha=1 - m)
 
-    def train(self):
-        super().train()
+    def train(self, mode=True):
+        super().train(mode=mode)
         self.teacher.eval()
 
     def get_maybe_fused_params_for_submodel(self, m):
