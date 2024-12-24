@@ -46,8 +46,8 @@ def get_cfg_from_args(args):
     return cfg
 
 
-def default_setup(args, distributed=True):
-    if distributed:
+def default_setup(args, init_distributed=True):
+    if init_distributed:
         distributed.enable(overwrite=True)
     seed = getattr(args, "seed", 0)
     rank = distributed.get_global_rank()
@@ -61,13 +61,13 @@ def default_setup(args, distributed=True):
     logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
 
 
-def setup(args, distributed=True):
+def setup(args, init_distributed=True):
     """
     Create configs and perform basic setups.
     """
     cfg = get_cfg_from_args(args)
     os.makedirs(args.output_dir, exist_ok=True)
-    default_setup(args, distributed)
+    default_setup(args, init_distributed=init_distributed)
     apply_scaling_rules_to_cfg(cfg)
     write_config(cfg, args.output_dir)
     return cfg
