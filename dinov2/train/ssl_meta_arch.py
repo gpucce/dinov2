@@ -285,10 +285,10 @@ class SSLMetaArch(nn.Module):
             ) / (n_global_crops_loss_terms + n_local_crops_loss_terms)
 
             # store for display
-            loss_dict["dino_local_crops_loss"] = dino_local_crops_loss
+            loss_dict["dino_local_crops_loss"] = self.dino_loss_weight * dino_local_crops_loss
 
             # accumulate loss
-            loss_accumulator += self.dino_loss_weight * dino_local_crops_loss
+            loss_accumulator += dino_local_crops_loss
 
         # process global crops
         loss_scales = 2  # this is here since we process global crops together
@@ -318,9 +318,7 @@ class SSLMetaArch(nn.Module):
                     self.koleo_loss(p) for p in student_cls_tokens.chunk(2)
                 )  # we don't apply koleo loss between cls tokens of a same image
                 loss_accumulator += koleo_loss
-                loss_dict["koleo_loss"] = (
-                    koleo_loss / loss_scales
-                )  # this is to display the same losses as before but we can remove eventually
+                loss_dict["koleo_loss"] = koleo_loss # this is to display the same losses as before but we can remove eventually
 
         if do_ibot:
             # compute loss
@@ -337,10 +335,10 @@ class SSLMetaArch(nn.Module):
             )
 
             # store for display
-            loss_dict["ibot_loss"] = ibot_patch_loss / 2
+            loss_dict["ibot_loss"] = self.ibot_loss_weight * ibot_patch_loss
 
             # accumulate loss
-            loss_accumulator += self.ibot_loss_weight * ibot_patch_loss
+            loss_accumulator += ibot_patch_loss
 
         # self.backprop_loss(loss_accumulator)
 
