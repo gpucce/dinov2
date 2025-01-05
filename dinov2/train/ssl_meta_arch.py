@@ -120,6 +120,9 @@ class SSLMetaArch(nn.Module):
             p.requires_grad = False
         logger.info(f"Student and Teacher are built: they are both {cfg.student.arch} network.")
 
+    def set_grad_checkpointing(self, enable=True):
+        self.student["backbone"].grad_checkpointing = enable
+
     def forward(self, inputs):
         raise NotImplementedError
 
