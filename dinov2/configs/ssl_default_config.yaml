@@ -90,6 +90,7 @@ teacher:
   warmup_teacher_temp: 0.04
   teacher_temp: 0.07
   warmup_teacher_temp_epochs: 30
+  teacher_temp_type: "constant" # either constant or cosine
 optim:
   epochs: 100
   weight_decay: 0.04

@@ -86,9 +86,14 @@ def build_schedulers(cfg):
         final_value=final_momentum_value,
         total_iters=cfg.optim["epochs"] * OFFICIAL_EPOCH_LENGTH,
     )
+    final_teacher_temp_value = None
+    if cfg.teacher["teacher_temp_type"] == "constant":
+        final_teacher_temp_value = cfg.teacher["teacher_temp"] 
+    else:
+        final_teacher_temp_value = cfg.teacher["final_teacher_temp"]
     teacher_temp = dict(
         base_value=cfg.teacher["teacher_temp"],
-        final_value=cfg.teacher["teacher_temp"],
+        final_value=final_teacher_temp_value,
         total_iters=cfg.teacher["warmup_teacher_temp_epochs"] * OFFICIAL_EPOCH_LENGTH,
         warmup_iters=cfg.teacher["warmup_teacher_temp_epochs"] * OFFICIAL_EPOCH_LENGTH,
         start_warmup_value=cfg.teacher["warmup_teacher_temp"],
