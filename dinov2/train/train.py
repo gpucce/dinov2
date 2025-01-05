@@ -76,9 +76,14 @@ def build_schedulers(cfg):
         final_value=cfg.optim["weight_decay_end"],
         total_iters=cfg.optim["epochs"] * OFFICIAL_EPOCH_LENGTH,
     )
+    final_momentum_value = None
+    if cfg.teacher["momentum_type"] == "cosine":
+        final_momentum_value = cfg.teacher["final_momentum_teacher"]
+    elif cfg.teacher["momentum_type"] == "constant":
+        final_momentum_value = cfg.teacher["momentum_teacher"]
     momentum = dict(
         base_value=cfg.teacher["momentum_teacher"],
-        final_value=cfg.teacher["final_momentum_teacher"],
+        final_value=final_momentum_value,
         total_iters=cfg.optim["epochs"] * OFFICIAL_EPOCH_LENGTH,
     )
     teacher_temp = dict(

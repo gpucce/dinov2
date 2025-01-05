@@ -14,7 +14,7 @@ from dinov2.models import build_model_from_cfg
 from dinov2.layers import DINOHead
 from dinov2.utils.utils import has_batchnorms
 from dinov2.utils.param_groups import get_params_groups_with_decay, fuse_params_groups
-from dinov2.fsdp import get_fsdp_wrapper, ShardedGradScaler, get_fsdp_modules, reshard_fsdp_model
+from dinov2.fsdp import get_fsdp_wrapper, ShardedGradScaler, get_fsdp_modules, reshard_fsdp_model, is_fsdp
 
 from dinov2.models.vision_transformer import BlockChunk
 
@@ -306,10 +306,10 @@ class SSLMetaArch(nn.Module):
                 / (n_global_crops_loss_terms + n_local_crops_loss_terms)
             )
 
-            loss_dict["dino_global_crops_loss"] = dino_global_crops_loss
+            loss_dict["dino_global_crops_loss"] = self.dino_loss_weight * dino_global_crops_loss
 
             # accumulate loss
-            loss_accumulator += self.dino_loss_weight * dino_global_crops_loss
+            loss_accumulator += dino_global_crops_loss
 
             student_cls_tokens = student_global_cls_tokens
 
@@ -360,13 +360,17 @@ class SSLMetaArch(nn.Module):
         student_param_list = []
         teacher_param_list = []
         with torch.no_grad():
-            for k in self.student.keys():
-                for ms, mt in zip(self.student[k].parameters(), self.teacher[k].parameters()):
-                    student_param_list += [ms]
-                    teacher_param_list += [mt]
-                # for ms, mt in zip(get_fsdp_modules(self.student[k]), get_fsdp_modules(self.teacher[k])):
-                #     student_param_list += ms.params
-                #     teacher_param_list += mt.params
+            if is_fsdp(self.student["backbone"]):
+                for k in self.student.keys():
+                    for ms, mt in zip(get_fsdp_modules(self.student[k]), get_fsdp_modules(self.teacher[k])):
+                        student_param_list += ms.params
+                        teacher_param_list += mt.params
+            else:
+                for k in self.student.keys():
+                    for ms, mt in zip(self.student[k].parameters(), self.teacher[k].parameters()):
+                        student_param_list += [ms]
+                        teacher_param_list += [mt]
+
             torch._foreach_mul_(teacher_param_list, m)
             torch._foreach_add_(teacher_param_list, student_param_list, alpha=1 - m)
 
@@ -393,14 +397,15 @@ class SSLMetaArch(nn.Module):
             all_params_groups += self.get_maybe_fused_params_for_submodel(m)
         return all_params_groups
 
-    def prepare_for_distributed_training(self):
+    def prepare_for_distributed_training(self, fsdp=True):
         logger.info("DISTRIBUTED FSDP -- preparing model for distributed training")
         if has_batchnorms(self.student):
             raise NotImplementedError
         # below will synchronize all student subnetworks across gpus:
         for k, v in self.student.items():
             self.teacher[k].load_state_dict(self.student[k].state_dict())
-            student_model_cfg = self.cfg.compute_precision.student[k]
-            self.student[k] = get_fsdp_wrapper(student_model_cfg, modules_to_wrap={BlockChunk})(self.student[k])
-            teacher_model_cfg = self.cfg.compute_precision.teacher[k]
-            self.teacher[k] = get_fsdp_wrapper(teacher_model_cfg, modules_to_wrap={BlockChunk})(self.teacher[k])
+            if fsdp:
+                student_model_cfg = self.cfg.compute_precision.student[k]
+                self.student[k] = get_fsdp_wrapper(student_model_cfg, modules_to_wrap={BlockChunk})(self.student[k])
+                teacher_model_cfg = self.cfg.compute_precision.teacher[k]
+                self.teacher[k] = get_fsdp_wrapper(teacher_model_cfg, modules_to_wrap={BlockChunk})(self.teacher[k])
