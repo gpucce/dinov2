@@ -22,9 +22,15 @@ def load_pretrained_weights(model, pretrained_weights, checkpoint_key):
         state_dict = torch.hub.load_state_dict_from_url(pretrained_weights, map_location="cpu")
     else:
         state_dict = torch.load(pretrained_weights, map_location="cpu")
-    if checkpoint_key is not None and checkpoint_key in state_dict:
-        logger.info(f"Take key {checkpoint_key} in provided checkpoint dict")
-        state_dict = state_dict[checkpoint_key]
+    if "state_dict" in state_dict:
+        state_dict = state_dict["state_dict"]
+        state_dict = {k.replace("visual.", ""):v for k,v in state_dict.items() if ".visual" in k}
+    if checkpoint_key is not None:
+        if checkpoint_key in state_dict:
+            logger.info(f"Take key {checkpoint_key} in provided checkpoint dict")
+            state_dict = state_dict[checkpoint_key]
+        else:
+            state_dict = {k.replace(f"{checkpoint_key}.", ""):v for k,v in state_dict.items() if checkpoint_key in k}
     # remove `module.` prefix
     state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
     # remove `backbone.` prefix induced by multicrop wrapper
