@@ -66,10 +66,30 @@ def build_model_for_eval(config, pretrained_weights):
     model.cuda()
     return model
 
+class OpenClipModelForEval(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        return self.model.encode_image(x)
+
+def build_clip_model_for_eval(model_name, pretrained_weights):
+    from open_clip import create_model_and_transforms
+    model, _, test_transform = create_model_and_transforms(
+        model_name, pretrained=pretrained_weights)
+    model = OpenClipModelForEval(model)
+    model.eval()
+    model.cuda()
+    return model, test_transform
+
 
 def setup_and_build_model(args) -> Tuple[Any, torch.dtype]:
     cudnn.benchmark = True
     config = setup(args)
-    model = build_model_for_eval(config, args.pretrained_weights)
+    if args.open_clip_model:
+        model, test_transform = build_clip_model_for_eval(args.open_clip_model_name, args.pretrained_weights)
+    else:
+        model = build_model_for_eval(config, args.pretrained_weights)
     autocast_dtype = get_autocast_dtype(config)
     return model, autocast_dtype

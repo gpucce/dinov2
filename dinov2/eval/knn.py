@@ -84,6 +84,16 @@ def get_args_parser(
         type=int,
         help="Number of tries",
     )
+    parser.add_argument(
+        "--open-clip-model",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--open-clip-model-name",
+        type=str,
+        default=None,
+    )
     parser.set_defaults(
         train_dataset_str="ImageNet:split=TRAIN",
         val_dataset_str="ImageNet:split=VAL",
