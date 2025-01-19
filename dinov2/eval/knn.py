@@ -387,7 +387,11 @@ def eval_knn_with_model(
 
 
 def main(args):
-    model, autocast_dtype = setup_and_build_model(args)
+    test_transform = None
+    if args.open_clip_model:
+        model, autocast_dtype, test_transform = setup_and_build_model(args)
+    else:
+        model, autocast_dtype = setup_and_build_model(args)
     eval_knn_with_model(
         model=model,
         output_dir=args.output_dir,
@@ -397,7 +401,7 @@ def main(args):
         temperature=args.temperature,
         autocast_dtype=autocast_dtype,
         accuracy_averaging=AccuracyAveraging.MEAN_ACCURACY,
-        transform=None,
+        transform=test_transform,
         gather_on_cpu=args.gather_on_cpu,
         batch_size=args.batch_size,
         num_workers=5,

@@ -87,9 +87,12 @@ def build_clip_model_for_eval(model_name, pretrained_weights):
 def setup_and_build_model(args) -> Tuple[Any, torch.dtype]:
     cudnn.benchmark = True
     config = setup(args)
+    test_transform = None
     if args.open_clip_model:
         model, test_transform = build_clip_model_for_eval(args.open_clip_model_name, args.pretrained_weights)
     else:
         model = build_model_for_eval(config, args.pretrained_weights)
     autocast_dtype = get_autocast_dtype(config)
+    if test_transform is not None:
+        return model, autocast_dtype, test_transform
     return model, autocast_dtype
