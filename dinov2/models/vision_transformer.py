@@ -246,6 +246,7 @@ class DinoVisionTransformer(nn.Module):
                     "x_norm_regtokens": x_norm[:, 1 : self.num_register_tokens + 1],
                     "x_norm_patchtokens": x_norm[:, self.num_register_tokens + 1 :],
                     "x_prenorm": x,
+                    "x_norm": x_norm,
                     "masks": masks,
                 }
             )
@@ -266,6 +267,7 @@ class DinoVisionTransformer(nn.Module):
             "x_norm_regtokens": x_norm[:, 1 : self.num_register_tokens + 1],
             "x_norm_patchtokens": x_norm[:, self.num_register_tokens + 1 :],
             "x_prenorm": x,
+            "x_norm": x_norm,
             "masks": masks,
         }
 
